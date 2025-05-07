@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>推箱子</title>
+    <style>
+        #game {
+            width: 400px;
+            height: 350px;
+            border: 2px solid black;
+            position: relative;
+            overflow: hidden;
+            background: #f0f0f0;
+            margin: 0 auto;
+            max-width: 100%;
+            touch-action: manipulation;
+            display: grid;
+            grid-template-columns: repeat(16, 20px);  
+            grid-template-rows: repeat(9, 20px);     
+            gap: 0;                                   
+            padding: 100px 0px;
+            justify-content: center;
+            align-content: start;  /* 改为center，让内容垂直居中 */
+            margin-top: 10px;
+        }
+
+        .wall {
+            background: #8B4513;
+            border-radius: 2px;
+            box-shadow: inset 1px 1px 3px rgba(255,255,255,0.3),
+                        inset -1px -1px 3px rgba(0,0,0,0.3);
+            width: 20px;  /* 从25px减小到20px */
+            height: 20px; /* 从25px减小到20px */
+        }
+
+        .box {
+            background: #DEB887;
+            border: 1px solid #8B4513;
+            border-radius: 3px;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            width: 18px;  /* 从25px减小到20px */
+            height: 18px; /* 从25px减小到20px */
+        }
+
+        .target {
+            background: #90EE90;
+            border-radius: 50%;
+            border: 1px dashed #006400;
+            width: 18px;  /* 从25px减小到20px */
+            height: 18px; /* 从25px减小到20px */
+        }
+
+        .player {
+            background: #4169E1;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            border: 1px solid #000080;
+            width: 18px;  /* 从25px减小到20px */
+            height: 18px; /* 从25px减小到20px */
+        }
+
+        .level-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #333;
+            font-size: 20px;  /* 增大字体 */
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .moves-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #333;
+            font-size: 20px;  /* 增大字体 */
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .time-display {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            color: #333;
+            font-size: 20px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        /* 修改左侧控制按钮容器样式 */
+        #side-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            display: flex;
+            gap: 10px;  /* 增加列间距 */
+            z-index: 1000;
+        }
+
+        .side-btn {
+            width: 70px;  /* 增加按钮宽度 */
+            height: 35px;
+            padding: 5px;
+            font-size: 16px;
+            background: rgba(65, 105, 225, 0.8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        .side-btn:active {
+            transform: scale(0.95);
+            background: rgba(65, 105, 225, 0.6);
+        }
+
+        /* 修改移动端控制按钮样式 */
+        #mobile-controls {
+            position: absolute;
+            bottom: 0px;  /* 从20px增大到40px */
+            right: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 0px;
+            padding: 15px;
+        }
+        .side-btn-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;  /* 从10px增大到15px */
+}
+
+        .reset-btn {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 35px;
+            padding: 5px;
+            font-size: 16px;
+            background: rgba(65, 105, 225, 0.8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        .side-btn:active {
+            transform: scale(0.95);
+            background: rgba(65, 105, 225, 0.6);
+        }
+
+        /* 修改方向按钮样式 */
+        .direction-btn {
+            width: 50px;  /* 从40px增大到50px */
+            height: 50px; /* 从40px增大到50px */
+            font-size: 28px; /* 从24px增大到28px */
+            background: rgba(65, 105, 225, 0.8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+
+.close-btn {
+    width: 100%;
+    padding: 10px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+}
+
+.close-btn:hover {
+    background: #cc0000;
+}
+        .direction-btn:active {
+            transform: scale(0.95);
+            background: rgba(65, 105, 225, 0.6);
+        }
+#level-selector {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.level-selector-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 80%;
+    max-height: 80%;
+    overflow-y: auto;
+    width: 600px;
+    height: 400px;
+}
+
+.levels-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.level-btn {
+    padding: 10px;
+    background: #4169E1;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.level-btn:hover {
+    background: #304f9e;
+}
+
+#character-selector {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.character-selector-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 80%;
+    max-height: 80%;
+    overflow-y: auto;
+}
+
+.character-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.character-option {
+    padding: 10px;
+    background: #4169E1;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.character-option:hover {
+    background: #304f9e;
+}
+
+
+.close-btn {
+    width: 100%;
+    padding: 10px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+/* 删除这个媒体查询，这样电脑端也能看到按钮 */
+        /* @media (min-width: 768px) {
+            #mobile-controls {
+                display: none;
+            }
+        } */
+    </style>
+</head>
+<body>
+    <div id="game">
+        
+        
+        <!-- 右侧方向控制按钮 -->
+        <div id="mobile-controls">
+            <div></div>
+            <button class="direction-btn" onclick="movePlayer(0, -1)">↑</button>
+            <div></div>
+            <button class="direction-btn" onclick="movePlayer(-1, 0)">←</button>
+            <div></div>
+            <button class="direction-btn" onclick="movePlayer(1, 0)">→</button>
+            <div></div>
+            <button class="direction-btn" onclick="movePlayer(0, 1)">↓</button>
+            <div></div>
+        </div>
+    </div>
+    <div id="level-selector" style="display: none;">
+        <div class="level-selector-content">
+            <h3>选择关卡</h3>
+            <div class="levels-grid"></div>
+            <button class="close-btn" onclick="closeLevelSelector()">关闭</button>
+        </div>
+    </div>
+    <div id="character-selector" style="display: none;">
+        <div class="character-selector-content">
+            <h3>选择人物颜色</h3>
+            <div class="character-options">
+                <div class="character-option" data-color="#4169E1">
+                    <div class="character-preview" style="background: #4169E1;"></div>
+                    <span>蓝色</span>
+                </div>
+                <div class="character-option" data-color="#FF0000">
+                    <div class="character-preview" style="background: #FF0000;"></div>
+                    <span>红色</span>
+                </div>
+                <div class="character-option" data-color="#00FF00">
+                    <div class="character-preview" style="background: #00FF00;"></div>
+                    <span>绿色</span>
+                </div>
+            </div>
+            <button class="close-btn" onclick="closeCharacterSelector()">关闭</button>
+        </div>
+    </div>
+ 
+    <script>
+        const LEVELS = [
+            // 关卡1
+            {
+                map: [
+                    "0000001110000000",
+                    "0000001210000000",
+                    "0000001011110000",
+                    "0000111303210000",
+                    "0000120301110000",
+                    "0000111131000000",
+                    "0000000121000000",
+                    "0000000111000000"
+                ],
+                player: {x: 8, y: 3}
+            },
+            // 关卡2
+            {
+                map: [
+                    "0001111100000000",
+                    "0001400100000000",
+                    "0001033101110000",
+                    "0001030101210000",
+                    "0001110111210000",
+                    "0000110000210000",
+                    "0000100010010000",
+                    "0000100011110000",
+                    "0000111111000000"
+                ],
+                player: {x: 4, y: 1}
+            },
+            // 关卡3
+            {
+                map: [
+                    "0000111111110000",
+"0000100000111000",
+"0001131110001000",
+"0001040300301000",
+"0001022103011000",
+"0001122100010000",
+"0000111111110000"
+                ],
+                player: {x: 4, y: 3}
+            },
+            // 关卡4
+            {
+                map: [
+                    "0000011110000000",
+                    "0000110010000000",
+                    "0000143010000000",
+                    "0000113011000000",
+                    "0000110301000000",
+                    "0000123001000000",
+                    "0000122521000000",
+                    "0000111111000000"
+                ],
+                player: {x: 5, y: 2}
+            },
+            // 关卡5
+            {
+                map: [
+                    "0000011111000000",
+                    "0000014011100000",
+                    "0000010300100000",
+                    "0000111010110000",
+                    "0000121010010000",
+                    "0000123001010000",
+                    "0000120003010000",
+                    "0000111111110000"
+                ],
+                player: {x: 6, y: 1}
+            },
+            // 关卡6
+            {
+                map: [
+                    "0000111111100000",
+"0111100000100000",
+"0100021110100000",
+"0101010000110000",
+"0101030312010000",
+"0101005001010000",
+"0102130301010000",
+"0110000101011100",
+"0010111200004100",
+"0010000011000100",
+"0011111111111100"
+                ],
+                player: {x: 12, y: 8}
+            },
+            // 关卡7
+            {
+                map: [
+                    "0000000111111100",
+                    "0000001100104100",
+                    "0000001000100100",
+                    "0000001303030100",
+                    "0000001031100100",
+                    "0000111030101100",
+                    "0000122222001000",
+                    "0000111111111000"
+                ],
+                player: {x: 11, y: 1}
+            },
+            // 关卡8
+            {
+                map: [
+                    "0000001111110000",  // 保留原第5行
+                    "0000111000010000",  // 保留原第6行
+                    "0001120311011000",  // 保留原第7行
+                    "0001223030041000",  // 保留原第8行（包含玩家初始位置4）
+                    "0001220303011000",  // 保留原第9行
+                    "0001111110010000",  // 保留原第10行
+                    "0000000011110000"
+                ],
+                player: {x: 11, y: 3}
+            },
+            // 关卡9
+            {
+                map: [
+                    "0001111111110000",
+                    "0001001100010000",
+                    "0001003000010000",
+                    "0001301110310000",
+                    "0001012221010000",
+                    "0011012221011000",
+                    "0010300300301000",
+                    "0010000010401000",
+                    "0011111111111000"
+                ],
+                player: {x: 11, y: 7}
+            },
+            // 关卡10
+            {
+                map: [
+                    "0000001111110000",
+                    "0000001000010000",
+                    "0000111333010000",
+                    "0000140322010000",
+                    "0000103222110000",
+                    "0000111100100000",
+                    "0000000111100000"
+                ],
+                player: {x: 5, y: 3}
+            },
+            // 关卡11
+            {
+                map: [
+                    "0001111001111100",
+                    "0011001001000100",
+                    "0010301111300100",
+                    "0010032222030100",
+                    "0011000010401100",
+                    "0001111111111000"
+                ],
+                player: {x: 7, y: 4}
+            },
+            // 关卡12
+            {
+                map: [
+                    "0000000111110000",
+                    "0000011100410000",
+                    "0000010032011000",
+                    "0000010023201000",
+                    "0000011105301000",
+                    "0000000100011000",
+                    "0000000111110000"
+                ],
+                player: {x: 8, y: 1}
+            },
+            // 关卡13
+            {
+                map: [
+                    "0000000111100000",
+                    "0000000122100000",
+                    "0000001102110000",
+                    "0000001003210000",
+                    "0000011030011000",
+                    "0000010013301000",
+                    "0000010040001000",
+                    "0000011111111000"
+                ],
+                player: {x: 8, y: 6}
+            },
+            // 关卡14
+            {
+                map: [
+                    "0000011111111000",
+                    "0000010010001000",
+                    "0000010322301000",
+                    "0000014325011000",
+                    "0000010322301000",
+                    "0000010010001000",
+                    "0000011111111000"
+                ],
+                player: {x: 6, y: 3}
+            },
+            // 关卡15
+            {
+                map: [
+                    "0000001111110000",
+                    "0000011000010000",
+                    "0000010303301000",
+                    "0000012222221000",
+                    "0000010330301000",
+                    "00000111041110000",
+                    "0000000111100000"
+                ],
+                player: {x: 9, y: 5}
+            },
+            // 关卡16
+            {
+                map: [
+                    "0000001111110000",
+                    "0000001000011100",
+                    "0000001030000100",
+                    "0000111030110100",
+                    "0000122203000100",
+                    "0000122231301100",
+                    "0000111101030100",
+                    "0000000100400100",
+                    "0000000111111100"
+                ],
+                player: {x: 10, y: 7}
+            },
+            // 关卡17
+            {
+                map: [
+                    "00000011111100000",
+                    "00000010000100000",
+                    "00000010333110000",
+                    "00000010012211100",
+                    "00000011002230100",
+                    "00000001040000100",
+                    "00000001111111100"
+                ],
+                player: {x: 9, y: 5}
+            },
+            // 关卡18
+            {
+                map: [
+                    "0000011111111000",
+                    "0000010001201000",
+                    "0000110032221000",
+                    "0000100301521000",
+                    "0001101131011000",
+                    "0001000300301000",
+                    "0001000100001000",
+                    "0001111111401000",
+                    "0000000001111000"
+                ],
+                player: {x: 10, y: 7}
+            },
+            // 关卡19
+            {
+                map: [
+                    "0000111111100000",
+                    "0000122220100000",
+                    "0001112223111000",
+                    "0001003130301000",
+                    "0001033001301000",
+                    "0001000010001000",
+                    "0001111040111000",
+                    "0000001111100000"
+                ],
+                player: {x: 8, y: 6}
+            },
+            // 关卡20
+            {
+                map: [
+                    "0000000111111100",
+                    "0000000122322100",
+                    "0000000122122100",
+                    "0000000103330100",
+                    "0000000100300100",
+                    "0000000103330100",
+                    "0000000100140100",
+                    "0000000111111100"
+                ],
+                player: {x: 11, y: 6}
+            },
+            // 关卡21
+            {
+                map: [
+                    "0000011111100000",
+"0000010222100000",
+"0011112222100000",
+"0010011130111000",
+"0010303003301000",
+"0014030300001000",
+"0010001110001000",
+"0011111011111000"
+                ],
+                player: {x: 3, y: 5}  // 请设置玩家初始位置
+            },
+            // 关卡22
+            {
+                map: [
+                    "0000111111110000",
+"0000100000010000",
+"0000101330010000",
+"0000102221010000",
+"0000112223011000",
+"0000010110301000",
+"0000013003001000",
+"0000010010041000",
+"0000011111111000"// 您可以在这里填写地图内容
+                ],
+                player: {x: 11, y: 7}  // 请设置玩家初始位置
+            },
+            // 关卡23
+            {
+                map: [
+                    "0000011111000000",
+"0001110001111000",
+"0001000303001000",
+"0001030003041000",
+"0001113311111000",
+"0000010022100000",
+"0000012222100000",
+"0000011111100000"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x: 11, y: 3}  // 请设置玩家初始位置
+            },
+            // 关卡24
+            {
+                map: [
+                    "0111111000111110",
+"0100001110100210",
+"0100303010122210",
+"0101003011100210",
+"0100333000304210",
+"0111003003100210",
+"0001003130122210",
+"0001100000100210",
+"0000111111111110"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x:12, y: 4}  // 请设置玩家初始位置
+            },
+            // 关卡25
+            {
+                map: [
+                    "0000000111111000",
+"0001111120001000",
+"0001001221101000",
+"0001003220001000",
+"0001001021011000",
+"0011101131001000",
+"0010300003301000",
+"0010131001001000",
+"0014001111111000",
+"0011111000000000"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x: 3, y: 8}  // 请设置玩家初始位置
+            },
+            // 关卡26
+            {
+                map: [
+                    "0001111111110000",
+"0001000110011110",
+"0001030000000010",
+"0001131110110010",
+"0001001105010110",
+"0001032222220100",
+"0011011102010100",
+"0010000031113100",
+"0010001000034100",
+"0011111310111100",
+"0000001000100000",
+"0000001111100000"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x: 12, y: 8}  // 请设置玩家初始位置
+            },
+            // 关卡27
+            {
+                map: [
+                    "0000001111111110",
+"0000001000000010",
+"0000001010101010",
+"0000001003031010",
+"1111111000300010",
+"1221001103031010",
+"1220001103030010",
+"1221001101111110",
+"1221010303010000",
+"1220000030010000",
+"1001110401110000",
+"1111011111000000"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x: 7, y: 10}  // 请设置玩家初始位置
+            },
+            // 关卡28
+            {
+                map: [
+                    "0000111100000000",
+"1111100100000000",
+"1003030101111111",
+"1000300101525251",
+"1103030111252521",
+"0130300100525251",
+"0143030000252511",
+"0130300100525251",
+"1103030111252521",
+"1000300101525251",
+"1003030101111111",
+"1111100100000000",
+"0000111100000000"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x: 2, y: 6}  // 请设置玩家初始位置
+            },
+            // 关卡29
+            {
+                map: [
+                    "0000111111110000",
+"0000122222210000",
+"0000100301011000",
+"0000103010301000",
+"0000113030301000",
+"0000010040001000",
+"0000011111111000"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x: 8, y: 5}  // 请设置玩家初始位置
+            },
+            // 关卡30
+            {
+                map: [
+                    "0000111111111100",
+"0011100020000100",
+"0010001131100100",
+"0010432020231100",
+"0011031131101000",
+"0001000020001000",
+"0001111111111000"
+                    // 您可以在这里填写地图内容
+                ],
+                player: {x:4, y:3}  // 请设置玩家初始位置
+            },
+            // 关卡31
+            {
+                map: [
+                    "0000000111111000",
+"0000111120041000",
+"0000100333001000",
+"0000121121121000",
+"0000100030001000",
+"0000100321011000",
+"0000111100010000",
+"0000000111110000"
+                ],
+                player: {x:11, y:1}  // 
+            },
+            // 关卡32
+            {
+                map: [
+                   "0000111111000000",
+"0000120221000000",
+"0000120321000000",
+"0001110031100000",
+"0001030030100000",
+"0001013110100000",
+"0001000400100000",
+"0001111111100000" 
+                ],
+                player: {x:7, y:6}  // 
+            },
+            // 关卡33
+            {
+                map: [
+                    "0000011111100000",
+"0001110000111000",
+"0001000130001110",
+"0001000300033010",
+"0001033013000010",
+"0001100030003010",
+"0111111013111110",
+"0122401300100000",
+"0121220031100000",
+"0122223101000000",
+"0122220001000000",
+"0111111111000000"
+                ],
+                player: {x:4, y:7}  // 
+            },
+            // 关卡34
+            {
+                map: [
+                    "1111111111111110",
+"1000000100000010",
+"1030130103113010",
+"1010030100000010",
+"1000113131133010",
+"1010102220100010",
+"1030020102301010",
+"1031432221010010",
+"1000020102003010",
+"1011231113201010",
+"1010322222011010",
+"1000000000000010",
+"1111111111111110"
+                ],
+                player: {x:4, y:7}  // 
+            },
+            // 关卡35
+            {
+                map: [
+                    "0001111111110000",
+"0001000110010000",
+"0001010303010000",
+"0001005210010000",
+"0001101242110000",
+"0001131115111000",
+"0001000000001000",
+"0001000110101000",
+"0001111110001000",
+"0000000011111000"
+                ],
+                player: {x:8, y:4}  // 
+            },
+            // 关卡36
+            {
+                map: [
+                    "1111111100000000",
+"1000000100000000",
+"1033000111000000",
+"1003033301111100",
+"1101102220000110",
+"0101412221113010",
+"0101032220000010",
+"1101032223010110",
+"1001111101110100",
+"1000000300030100",
+"1111111111100100",
+"0000000000111100"
+                ],
+                player: {x:4, y:5}  // 
+            },
+            // 关卡37
+            {
+                map: [
+                    "0000000111110000",
+"0000000104010000",
+"0000000133310000",
+"0000111100010000",
+"0000100021311000",
+"0000103232021000",
+"0000100121211000",
+"0000111111110000"
+                ],
+                player: {x:9, y:1}  // 
+            },
+            // 关卡38
+            {
+                map: [
+                    "0011111111111100",
+"0012220100000100",
+"0012200101100100",
+"0012200000100100",
+"0012200103110100",
+"0012220130300100",
+"0011111100330100",
+"0001100303300100",
+"0001403330010100",
+"0001103011000100",
+"0000100000000100",
+"0000111111111100"
+                ],
+                player: {x:4, y:8}  // 
+            },
+            // 关卡39
+            {
+                map: [
+                    "0001111111110000",
+"0001000000010000",
+"0001003030310000",
+"0001101311010000",
+"0000102202211000",
+"0000112202201000",
+"0000010113101100",
+"0000013030300100",
+"0000010000004100",
+"0000011111111100"
+                ],
+                player: {x:12, y:8}  // 
+            },
+            // 关卡40
+            {
+                map: [
+                    "1111100000011110",
+"1400111111110010",
+"1103000000030010",
+"0101010011110010",
+"0100300011113110",
+"0130110103030100",
+"1103003100000100",
+"1000100000010100",
+"1000111113111100",
+"1111100010001000",
+"0000122200301000",
+"0000122221001000",
+"0000122221111000",
+"0000111111000000"
+                ],
+                player: {x:1, y:1}  // 
+            }
+        ];
+
+        let currentLevel = 0;
+        let moves = 0;
+        let playerPos = {x: 0, y: 0};
+        let boxes = [];
+        let targets = [];
+        
+        function initGame() {
+            const level = LEVELS[currentLevel];
+            const game = document.getElementById('game');
+            game.innerHTML = '';
+            boxes = [];
+            targets = [];
+            
+            // 添加显示元素和控制按钮
+            game.innerHTML = `
+                <div class="level-display">关卡: <span id="level">${currentLevel + 1}</span></div>
+                <div class="moves-display">步数: <span id="moves">${moves}</span></div>
+                
+                <!-- 添加左侧控制按钮 -->
+                <div id="side-controls">
+                    <div class="side-btn-column">
+                        <button class="side-btn" onclick="resetLevel()">重 置</button>
+                        <button class="side-btn" onclick="showRecords()">记 录</button>
+                        <button class="side-btn" onclick="showCharacterSelector()">人 物</button>
+                    </div>
+                    <div class="side-btn-column">
+                        <button class="side-btn" onclick="showLevelSelector()">选 关</button>
+                        <button class="side-btn" onclick="prevLevel()">上一关</button>
+                        <button class="side-btn" onclick="nextLevel()">下一关</button>
+                    </div>
+                </div>
+                
+                <!-- 添加右侧方向控制按钮 -->
+                <div id="mobile-controls">
+                    <div></div>
+                    <button class="direction-btn" onclick="movePlayer(0, -1)">↑</button>
+                    <div></div>
+                    <button class="direction-btn" onclick="movePlayer(-1, 0)">←</button>
+                    <div></div>
+                    <button class="direction-btn" onclick="movePlayer(1, 0)">→</button>
+                    <div></div>
+                    <button class="direction-btn" onclick="movePlayer(0, 1)">↓</button>
+                    <div></div>
+                </div>
+            `;
+        
+            // 初始化游戏地图
+            level.map.forEach((row, y) => {
+                for(let x = 0; x < row.length; x++) {
+                    const cell = document.createElement('div');
+                    cell.style.gridColumn = x + 1;
+                    cell.style.gridRow = y + 1;
+                    
+                    switch(row[x]) {
+                        case '1':
+                            cell.className = 'wall';
+                            break;
+                        case '2':
+                            targets.push({x, y});
+                            cell.className = 'target';
+                            break;
+                        case '3':
+                            boxes.push({x, y});
+                            break;
+                        case '4':
+                            playerPos = {x, y};
+                            break;
+                    }
+                    game.appendChild(cell);
+                }
+            });
+        
+            // 放置玩家
+            playerPos = {...level.player};
+            const player = document.createElement('div');
+            player.className = 'player';
+            player.style.gridColumn = playerPos.x + 1;
+            player.style.gridRow = playerPos.y + 1;
+            game.appendChild(player);
+            
+            // 放置箱子
+            boxes.forEach(box => {
+                const boxElement = document.createElement('div');
+                boxElement.className = 'box';
+                boxElement.style.gridColumn = box.x + 1;
+                boxElement.style.gridRow = box.y + 1;
+                game.appendChild(boxElement);
+            });
+        
+            // 添加颜色选择事件监听器
+            const options = document.querySelectorAll('.character-option');
+            options.forEach(option => {
+                option.addEventListener('click', () => {
+                    const color = option.dataset.color;
+                    updatePlayerColor(color);
+                    closeCharacterSelector();
+                });
+            });
+        }
+
+        function movePlayer(dx, dy) {
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+            
+            // 检查是否可以移动
+            const box = boxes.find(b => b.x === newX && b.y === newY);
+            if (box) {
+                const newBoxX = newX + dx;
+                const newBoxY = newY + dy;
+                
+                // 检查箱子是否可以移动
+                if (!boxes.find(b => b.x === newBoxX && b.y === newBoxY) &&
+                    !isWall(newBoxX, newBoxY)) {
+                    // 移动箱子
+                    box.x = newBoxX;
+                    box.y = newBoxY;
+                    // 移动玩家到箱子的原位置
+                    playerPos.x = newX;
+                    playerPos.y = newY;
+                    moves++;
+                    updateDisplay();
+                    checkWin();
+                }
+            } else if (!isWall(newX, newY)) {
+                playerPos.x = newX;
+                playerPos.y = newY;
+                moves++;
+                updateDisplay();
+            }
+        }
+
+        function isWall(x, y) {
+            const level = LEVELS[currentLevel];
+            // 检查坐标是否在地图范围内
+            if (y < 0 || y >= level.map.length || x < 0 || x >= level.map[y].length) {
+                return true;
+            }
+            // 检查是否为墙壁（'1'表示墙壁）
+            return level.map[y][x] === '1';
+        }
+
+        function updatePlayerAppearance() {
+            const player = document.querySelector('.player');
+            if (player) {
+                player.style.backgroundColor = playerColor;
+                player.style.borderRadius = '50%'; // 保持圆形
+                player.style.clipPath = ''; // 移除三角形样式
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('moves').textContent = moves;
+            
+            // 更新玩家位置
+            const player = document.querySelector('.player');
+            player.style.gridColumn = playerPos.x + 1;
+            player.style.gridRow = playerPos.y + 1;
+            
+            // 清除所有箱子
+            const oldBoxes = document.querySelectorAll('.box');
+            oldBoxes.forEach(box => box.remove());
+            
+            // 重新创建箱子
+            boxes.forEach(box => {
+                const boxElement = document.createElement('div');
+                boxElement.className = 'box';
+                // 检查箱子是否在目标点上
+                if (targets.some(target => target.x === box.x && target.y === box.y)) {
+                    boxElement.classList.add('on-target');
+                }
+                boxElement.style.gridColumn = box.x + 1;
+                boxElement.style.gridRow = box.y + 1;
+                document.getElementById('game').appendChild(boxElement);
+            });
+        }
+
+        function checkWin() {
+            const allBoxesOnTarget = boxes.every(box => 
+                targets.some(target => target.x === box.x && target.y === box.y)
+            );
+            
+            if (allBoxesOnTarget) {
+                // 先让所有箱子显示进洞动画
+                const boxElements = document.querySelectorAll('.box');
+                boxElements.forEach(box => {
+                    box.style.transition = 'all 0.5s ease';
+                    box.classList.add('on-target');
+                });
+
+                // 等待动画完成后再显示胜利窗口并自动进入下一关
+                setTimeout(() => {
+                    alert(`恭喜通关！\n使用步数：${moves}`);
+                    if (currentLevel < LEVELS.length - 1) {
+                        currentLevel++;
+                        resetLevel();
+                    }
+                }, 600);
+            }
+        }
+
+        function resetLevel() {
+            moves = 0;
+            boxes = [];
+            targets = [];
+            initGame();
+        }
+
+        function prevLevel() {
+            if (currentLevel > 0) {
+                currentLevel--;
+                resetLevel();
+            }
+        }
+
+        function nextLevel() {
+            if (currentLevel < LEVELS.length - 1) {
+                currentLevel++;
+                resetLevel();
+            }
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowDown':
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowLeft':
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                    movePlayer(1, 0);
+                    break;
+                case 'r':
+                    resetLevel();
+                    break;
+            }
+        });
+
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>
+
+<script>
+    function showLevelSelector() {
+        const selector = document.getElementById('level-selector');
+        const levelsGrid = selector.querySelector('.levels-grid');
+        levelsGrid.innerHTML = '';
+        
+        // 分页显示关卡
+        const perPage = 12;
+        let currentPage = 0;
+        
+        function showPage(page) {
+            levelsGrid.innerHTML = '';
+            const start = page * perPage;
+            const end = Math.min(start + perPage, LEVELS.length);
+            
+            for (let i = start; i < end; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'level-btn';
+                btn.textContent = `第${i + 1}关`;
+                btn.onclick = () => {
+                    currentLevel = i;
+                    moves = 0;
+                    initGame();
+                    closeLevelSelector();
+                };
+                levelsGrid.appendChild(btn);
+            }
+            
+            // 添加分页按钮
+            if (LEVELS.length > perPage) {
+                const pagination = document.createElement('div');
+                pagination.className = 'pagination';
+                
+                if (page > 0) {
+                    const prevBtn = document.createElement('button');
+                    prevBtn.textContent = '上一页';
+                    prevBtn.onclick = () => showPage(page - 1);
+                    pagination.appendChild(prevBtn);
+                }
+                
+                if (end < LEVELS.length) {
+                    const nextBtn = document.createElement('button');
+                    nextBtn.textContent = '下一页';
+                    nextBtn.onclick = () => showPage(page + 1);
+                    pagination.appendChild(nextBtn);
+                }
+                
+                levelsGrid.appendChild(pagination);
+            }
+        }
+        
+        showPage(currentPage);
+        selector.style.display = 'flex';
+    }
+
+    function closeLevelSelector() {
+        const selector = document.getElementById('level-selector');
+        if (selector) {
+            selector.style.display = 'none';
+        }
+    }
+
+    function showRecords() {
+        const records = getRecord();
+        const recordsDiv = document.createElement('div');
+        recordsDiv.style.position = 'fixed';
+        recordsDiv.style.top = '50%';
+        recordsDiv.style.left = '50%';
+        recordsDiv.style.transform = 'translate(-50%, -50%)';
+        recordsDiv.style.backgroundColor = 'white';
+        recordsDiv.style.padding = '20px';
+        recordsDiv.style.borderRadius = '10px';
+        recordsDiv.style.zIndex = '1000';
+        recordsDiv.style.width = '90%'; // 改为相对宽度
+        recordsDiv.style.maxWidth = '400px'; // 设置最大宽度
+        
+        let currentPage = 0;
+        const itemsPerPage = 5; // 减少每页显示的数量
+        const totalPages = Math.ceil(LEVELS.length / itemsPerPage);
+        
+        function showPage(page) {
+            const start = page * itemsPerPage;
+            const end = Math.min(start + itemsPerPage, LEVELS.length);
+            
+            let content = '<h3 style="text-align:center;">关卡记录</h3>';
+            content += '<table style="width:100%; border-collapse: collapse;">';
+            content += '<tr><th style="padding:8px; border:1px solid #ddd;">关卡</th><th style="padding:8px; border:1px solid #ddd;">最少步数</th><th style="padding:8px; border:1px solid #ddd;">完成时间</th></tr>';
+            
+            for (let i = start; i < end; i++) {
+                const record = records[i] || { steps: '暂无', time: '暂无' };
+                content += `<tr>
+                    <td style="padding:8px; border:1px solid #ddd;">第${i + 1}关</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${record.steps}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${record.time}</td>
+                </tr>`;
+            }
+            
+            content += '</table>';
+            
+            // 添加翻页按钮
+            content += '<div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">';
+            if (page > 0) {
+                content += `<button class="side-btn" onclick="changePage(${page - 1})">上一页</button>`;
+            }
+            content += `<span style="line-height:35px;">${page + 1}/${totalPages}</span>`;
+            if (page < totalPages - 1) {
+                content += `<button class="side-btn" onclick="changePage(${page + 1})">下一页</button>`;
+            }
+            content += '</div>';
+            
+            document.querySelector('.records-content').innerHTML = content;
+        }
+        
+        // 添加翻页函数到全局作用域
+        window.changePage = function(page) {
+            currentPage = page;
+            showPage(page);
+        };
+        
+        recordsDiv.innerHTML = `
+            <div class="records-content">
+            </div>
+            <button class="close-btn" onclick="this.parentElement.remove()">关闭</button>
+        `;
+        
+        document.body.appendChild(recordsDiv);
+        showPage(0); // 显示第一页
+    }
+
+    function getRecord() {
+        const records = localStorage.getItem('sokobanRecords');
+        return records ? JSON.parse(records) : {};
+    }
+
+    function saveRecord(level, moves) {
+        const records = getRecord();
+        const currentTime = new Date().toLocaleString();
+        
+        if (!records[level] || moves < records[level].steps) {
+            records[level] = {
+                steps: moves,
+                time: currentTime
+            };
+            localStorage.setItem('sokobanRecords', JSON.stringify(records));
+        }
+    }
+
+    function checkWin() {
+        const allOnTarget = boxes.every(box => 
+            targets.some(target => target.x === box.x && target.y === box.y)
+        );
+        
+        if (allOnTarget) {
+            saveRecord(currentLevel, moves);
+            alert(`恭喜通关！共用了${moves}步`);
+            // 添加自动跳转到下一关的逻辑
+            if (currentLevel < LEVELS.length - 1) {
+                currentLevel++;
+                moves = 0;
+                initGame();
+            } else {
+                alert('恭喜你完成了所有关卡！');
+                currentLevel = 0;
+                moves = 0;
+                initGame();
+            }
+        }
+    }
+
+    function showCharacterSelector() {
+        document.getElementById('character-selector').style.display = 'flex';
+    }
+
+    function closeCharacterSelector() {
+        document.getElementById('character-selector').style.display = 'none';
+    }
+
+    function updatePlayerColor(color) {
+        playerColor = color;
+        updatePlayerAppearance();
+    }
+</script>
